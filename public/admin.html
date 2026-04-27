@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xerox Admin Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body class="admin-body">
+    <div id="app">
+        <!-- Header -->
+        <header class="app-header admin-header">
+            <div class="logo">🖨️ Shopkeeper Admin</div>
+            <div id="system-status" class="status-badge online">🟢 System Online</div>
+        </header>
+
+        <!-- PAGE 6: Dashboard -->
+        <section id="page-dashboard" class="page active">
+            <div class="card bg-dark text-white">
+                <div class="flex-between">
+                    <h3>Shop Status</h3>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="shop-toggle" checked>
+                        <label for="shop-toggle"></label>
+                    </div>
+                </div>
+                <p id="shop-status-text" class="mt-1 font-bold">ACCEPTING JOBS</p>
+            </div>
+
+            <div class="grid-2-col mt-2">
+                <div class="card text-center border-primary">
+                    <h4 class="text-muted">Now Printing</h4>
+                    <div class="amount-huge text-primary" id="current-job">A23</div>
+                    <div class="progress-bar mt-1">
+                        <div class="progress" style="width: 45%;"></div>
+                    </div>
+                    <p class="mt-1">Page 4 of 10</p>
+                </div>
+                
+                <div class="card text-center">
+                    <h4 class="text-muted">Next Job</h4>
+                    <div class="amount-huge" id="next-job">A24</div>
+                    <p class="mt-1" id="next-job-meta">3 Files • ₹45</p>
+                    <div id="next-job-files" class="mt-1" style="font-size: 0.8rem; text-align: left;"></div>
+                </div>
+            </div>
+
+            <div class="action-grid mt-2">
+                <button class="btn btn-success btn-massive" onclick="startNextJob()">
+                    <span class="material-icons huge-icon">play_arrow</span>
+                    <br>START NEXT JOB
+                </button>
+                <button class="btn btn-warning btn-massive" onclick="pausePrinter()">
+                    <span class="material-icons huge-icon">pause</span>
+                    <br>PAUSE
+                </button>
+            </div>
+
+            <button class="btn btn-secondary btn-large w-100 mt-2" onclick="navigate('page-settings')">
+                <span class="material-icons">settings</span> Settings
+            </button>
+            
+            <!-- Error Alert Placeholder -->
+            <div id="error-alert" class="alert alert-danger hidden mt-2">
+                <span class="material-icons">error</span>
+                <div class="alert-content">
+                    <strong>Printer Error!</strong>
+                    <p>Out of paper in Tray 1.</p>
+                </div>
+                <button class="btn btn-danger btn-sm">Retry</button>
+            </div>
+        </section>
+
+        <!-- PAGE 7: Settings Page -->
+        <section id="page-settings" class="page">
+            <div class="header-with-back">
+                <button class="btn-icon" onclick="navigate('page-dashboard')"><span class="material-icons">arrow_back</span></button>
+                <h2>Settings</h2>
+            </div>
+            
+            <div class="card">
+                <h3>🖨️ Printer Configuration</h3>
+                <div class="form-group mt-1">
+                    <label>Selected Printer</label>
+                    <select class="input-large w-100">
+                        <option>Auto Detect (Default)</option>
+                        <option>Canon LBP2900</option>
+                        <option>HP LaserJet 1020</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card mt-2">
+                <h3>🕒 Shop Schedule</h3>
+                <div class="grid-2-col mt-1">
+                    <div class="form-group">
+                        <label>Open Time</label>
+                        <input type="time" class="input-large w-100" value="09:00">
+                    </div>
+                    <div class="form-group">
+                        <label>Close Time</label>
+                        <input type="time" class="input-large w-100" value="21:00">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-2">
+                <h3>🧹 Cleanup Rules</h3>
+                <div class="form-group mt-1">
+                    <label>Delete completed files after:</label>
+                    <select class="input-large w-100">
+                        <option>2 Hours (Recommended)</option>
+                        <option>1 Hour</option>
+                        <option>End of Day</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card mt-2 border-danger">
+                <h3>⚠️ Danger Zone</h3>
+                <button class="btn btn-danger btn-large w-100 mt-1">Clear Print Queue</button>
+            </div>
+        </section>
+
+    </div>
+
+    <script type="module" src="js/admin.js"></script>
+</body>
+</html>
