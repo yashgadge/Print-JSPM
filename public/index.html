@@ -182,7 +182,9 @@
             <div class="file-header">
                 <input type="checkbox" class="file-preview-checkbox" data-id="{id}" title="Show in preview panel"
                     style="width: 20px; height: 20px; cursor: pointer;">
-                <span class="material-icons file-icon">description</span>
+                <div class="file-item-preview-thumb" style="width: 50px; height: 50px; background: #eee; border-radius: 4px; overflow: hidden; margin-left: 10px; display: none; align-items: center; justify-content: center;">
+                    <!-- Live preview goes here -->
+                </div>
                 <div class="file-info">
                     <div class="file-name">filename.pdf</div>
                     <div class="file-meta">10 Pages • PDF</div>
@@ -282,7 +284,7 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    <script type="module" src="js/app.js?v=16"></script>
+    <script type="module" src="js/app.js?v=17"></script>
 </body>
 
 </html>

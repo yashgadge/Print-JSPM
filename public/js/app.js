@@ -218,7 +218,41 @@ function renderFiles() {
         // Image Options Setup - Robust detection
         const isImage = f.name.match(/\.(jpg|jpeg|png|webp)$/i) || (f.fileObj && f.fileObj.type && f.fileObj.type.startsWith('image/'));
         
+        const thumb = el.querySelector('.file-item-preview-thumb');
         if (isImage) {
+            thumb.style.display = 'flex';
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(f.fileObj);
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = f.imageFit !== false ? 'cover' : 'contain';
+            
+            // Rotation feedback
+            if (f.imageOrient === 'landscape') {
+                img.style.transform = 'rotate(90deg) scale(0.7)';
+                img.style.border = '2px solid var(--primary)';
+            }
+            if (f.type === 'bw') img.style.filter = 'grayscale(100%)';
+            
+            thumb.innerHTML = '';
+            thumb.appendChild(img);
+            
+            // If combined, show a badge
+            if ((f.combinedFiles || []).length > 0) {
+                const badge = document.createElement('div');
+                badge.textContent = `+${f.combinedFiles.length}`;
+                badge.style.position = 'absolute';
+                badge.style.background = 'var(--primary)';
+                badge.style.color = 'white';
+                badge.style.fontSize = '10px';
+                badge.style.padding = '2px 4px';
+                badge.style.borderRadius = '4px';
+                badge.style.bottom = '2px';
+                badge.style.right = '2px';
+                thumb.style.position = 'relative';
+                thumb.appendChild(badge);
+            }
+
             const imgBox = el.querySelector('.image-options-box');
             imgBox.style.display = 'block'; // Force display
             imgBox.classList.remove('hidden');
