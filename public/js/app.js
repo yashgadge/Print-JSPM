@@ -215,20 +215,31 @@ function renderFiles() {
             renderFiles();
         });
 
-        // Image Options Setup
-        if (f.fileObj && f.fileObj.type.startsWith('image/')) {
+        // Image Options Setup - Robust detection
+        const isImage = f.name.match(/\.(jpg|jpeg|png|webp)$/i) || (f.fileObj && f.fileObj.type && f.fileObj.type.startsWith('image/'));
+        
+        if (isImage) {
             const imgBox = el.querySelector('.image-options-box');
+            imgBox.style.display = 'block'; // Force display
             imgBox.classList.remove('hidden');
+            imgBox.style.background = '#f9f9f9';
+            imgBox.style.padding = '10px';
+            imgBox.style.borderRadius = '8px';
+            imgBox.style.border = '1px solid #eee';
             
             // Sync current state
-            el.querySelector('.image-layout-select').value = f.imageLayout || 'full';
+            const layoutSelect = el.querySelector('.image-layout-select');
+            layoutSelect.value = f.imageLayout || 'full';
+            
             const orientVal = f.imageOrient || 'portrait';
             const orientInput = el.querySelector(`input[name="orient_${f.id}"][value="${orientVal}"]`);
             if (orientInput) orientInput.checked = true;
-            el.querySelector('.image-fit-check').checked = f.imageFit !== false; // default true
+            
+            const fitCheck = el.querySelector('.image-fit-check');
+            fitCheck.checked = f.imageFit !== false;
             
             // Listeners
-            el.querySelector('.image-layout-select').onchange = (e) => {
+            layoutSelect.onchange = (e) => {
                 f.imageLayout = e.target.value;
                 renderMainPDFPreview();
             };
@@ -238,7 +249,7 @@ function renderFiles() {
                     renderMainPDFPreview();
                 };
             });
-            el.querySelector('.image-fit-check').onchange = (e) => {
+            fitCheck.onchange = (e) => {
                 f.imageFit = e.target.checked;
                 renderMainPDFPreview();
             };
