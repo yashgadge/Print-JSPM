@@ -284,6 +284,7 @@ function renderFiles() {
             // Listeners
             layoutSelect.onchange = (e) => {
                 f.imageLayout = e.target.value;
+                updateSlotPicker(f.id, el);
                 renderMainPDFPreview();
             };
             el.querySelectorAll(`input[name="orient_${f.id}"]`).forEach(r => {
