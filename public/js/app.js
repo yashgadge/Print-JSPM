@@ -84,60 +84,65 @@ window.fetchWhatsAppFiles = function fetchWhatsAppFiles() {
 }
 
 async function handleNewFiles(newFiles) {
-    // Validation for abuse prevention
-    if (files.length + newFiles.length > 5) {
-        alert("Maximum 5 files allowed per job to prevent system abuse.");
-        return;
-    }
-    
-    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'text/plain', 'image/jpeg', 'image/png', 'image/jpg'];
-    
-    for (let f of newFiles) {
-        if (!allowedTypes.includes(f.type)) {
-            alert(`${f.name} is an unsupported file type. (Use PDF, DOCX, PPT, JPG, PNG)`);
-            continue;
-        }
-        if (f.size > 100 * 1024 * 1024) { // Increased to 100MB
-            alert(`${f.name} is too large (Max 100MB)`);
-            continue;
+    try {
+        // Validation for abuse prevention
+        if (files.length + newFiles.length > 5) {
+            alert("Maximum 5 files allowed per job to prevent system abuse.");
+            return;
         }
         
-        let pagesCount = 1;
-        if (f.type === 'application/pdf') {
-            try {
-                const url = URL.createObjectURL(f);
-                const pdf = await pdfjsLib.getDocument(url).promise;
-                pagesCount = pdf.numPages;
-                URL.revokeObjectURL(url);
-            } catch (e) {
-                console.error("Failed to parse PDF page count", e);
-                pagesCount = 1;
+        const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'text/plain', 'image/jpeg', 'image/png', 'image/jpg'];
+        
+        for (let f of newFiles) {
+            if (!allowedTypes.includes(f.type)) {
+                alert(`${f.name} is an unsupported file type. (Use PDF, DOCX, PPT, JPG, PNG)`);
+                continue;
             }
+            if (f.size > 100 * 1024 * 1024) { // Increased to 100MB
+                alert(`${f.name} is too large (Max 100MB)`);
+                continue;
+            }
+            
+            let pagesCount = 1;
+            if (f.type === 'application/pdf') {
+                try {
+                    const url = URL.createObjectURL(f);
+                    const pdf = await pdfjsLib.getDocument(url).promise;
+                    pagesCount = pdf.numPages;
+                    URL.revokeObjectURL(url);
+                } catch (e) {
+                    console.error("Failed to parse PDF page count", e);
+                    pagesCount = 1;
+                }
+            }
+            
+            files.push({
+                id: 'file_' + Date.now() + Math.random().toString(36).substr(2, 9),
+                name: f.name,
+                fileObj: f,
+                type: 'bw', // default bw
+                copies: 1,
+                customColor: '',
+                customBw: '',
+                pages: pagesCount
+            });
         }
         
-        files.push({
-            id: 'file_' + Date.now() + Math.random().toString(36).substr(2, 9),
-            name: f.name,
-            fileObj: f,
-            type: 'bw', // default bw
-            copies: 1,
-            customColor: '',
-            customBw: '',
-            pages: pagesCount
-        });
-    }
-    
-    if (files.length > 0) {
-        renderFiles();
-        // Auto-check the first file for preview to show something immediately
-        setTimeout(() => {
-            const firstCheck = document.querySelector('.file-preview-checkbox');
-            if (firstCheck) {
-                firstCheck.checked = true;
-                renderMainPDFPreview();
-            }
-        }, 100);
-        navigate('page-preview');
+        if (files.length > 0) {
+            navigate('page-preview');
+            renderFiles();
+            // Auto-check the first file for preview to show something immediately
+            setTimeout(() => {
+                const firstCheck = document.querySelector('.file-preview-checkbox');
+                if (firstCheck) {
+                    firstCheck.checked = true;
+                    renderMainPDFPreview();
+                }
+            }, 100);
+        }
+    } catch (err) {
+        alert("Error processing files: " + err.message);
+        console.error(err);
     }
 }
 
