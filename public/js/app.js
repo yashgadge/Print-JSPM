@@ -341,7 +341,7 @@ function updateSlotPicker(fileId, el) {
     
     // Header text update
     const limitText = maxCombine === 99 ? 'unlimited' : `up to ${maxCombine}`;
-    el.querySelector('.slot-picker-container p').textContent = `Combine with other photos (select ${limitText}):`;
+    el.querySelector('.slot-picker-container p').textContent = `Select remaining photos (${limitText}):`;
     
     otherImages.forEach(other => {
         const item = document.createElement('div');
