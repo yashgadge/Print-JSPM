@@ -70,6 +70,8 @@ window.navigate = function navigate(pageId) {
 document.getElementById('file-upload').addEventListener('change', function(e) {
     const selectedFiles = Array.from(e.target.files);
     handleNewFiles(selectedFiles);
+    // Clear value so same file can be selected again
+    e.target.value = '';
 });
 
 window.fetchWhatsAppFiles = function fetchWhatsAppFiles() {
@@ -124,7 +126,10 @@ async function handleNewFiles(newFiles) {
                 copies: 1,
                 customColor: '',
                 customBw: '',
-                pages: pagesCount
+                pages: pagesCount,
+                imageLayout: 'full',
+                imageOrient: 'portrait',
+                imageFit: true
             });
         }
         
@@ -209,6 +214,35 @@ function renderFiles() {
             if (val > 0) f.copies = val;
             renderFiles();
         });
+
+        // Image Options Setup
+        if (f.fileObj && f.fileObj.type.startsWith('image/')) {
+            const imgBox = el.querySelector('.image-options-box');
+            imgBox.classList.remove('hidden');
+            
+            // Sync current state
+            el.querySelector('.image-layout-select').value = f.imageLayout || 'full';
+            const orientVal = f.imageOrient || 'portrait';
+            const orientInput = el.querySelector(`input[name="orient_${f.id}"][value="${orientVal}"]`);
+            if (orientInput) orientInput.checked = true;
+            el.querySelector('.image-fit-check').checked = f.imageFit !== false; // default true
+            
+            // Listeners
+            el.querySelector('.image-layout-select').onchange = (e) => {
+                f.imageLayout = e.target.value;
+                renderMainPDFPreview();
+            };
+            el.querySelectorAll(`input[name="orient_${f.id}"]`).forEach(r => {
+                r.onchange = (e) => {
+                    f.imageOrient = e.target.value;
+                    renderMainPDFPreview();
+                };
+            });
+            el.querySelector('.image-fit-check').onchange = (e) => {
+                f.imageFit = e.target.checked;
+                renderMainPDFPreview();
+            };
+        }
         
         el.querySelector('.file-preview-checkbox').addEventListener('change', () => {
             renderMainPDFPreview();
@@ -526,7 +560,11 @@ async function verifyAndSaveJob(order_id, payment_id, signature) {
                 customColor: f.customColor,
                 customBw: f.customBw,
                 customColorArray: f.customColorArray || [],
-                customBwArray: f.customBwArray || []
+                customBwArray: f.customBwArray || [],
+                // Image specific
+                imageLayout: f.imageLayout || 'full',
+                imageOrient: f.imageOrient || 'portrait',
+                imageFit: f.imageFit !== false
             });
         }
         
@@ -637,14 +675,36 @@ window.renderMainPDFPreview = async function() {
             const img = document.createElement('img');
             img.src = fileURL;
             img.style.maxWidth = '100%';
-            img.style.height = 'auto';
+            img.style.height = '150px'; // Fixed height for consistency in grid
             img.style.borderRadius = '4px';
             img.style.boxShadow = "0px 2px 4px rgba(0,0,0,0.1)";
+            
+            // Apply "Fit to Frame" logic
+            if (f.imageFit !== false) {
+                img.style.objectFit = 'cover'; // Cropped to fill
+            } else {
+                img.style.objectFit = 'contain'; // Whole image visible
+                img.style.background = "#eee";
+            }
+            
+            // Visual feedback for orientation
+            if (f.imageOrient === 'landscape') {
+                img.style.transform = "rotate(-5deg)"; // Subtle tilt to show it's landscape-intended
+                img.style.border = "3px solid var(--primary)";
+            }
+            
             if (f.type === 'bw') img.style.filter = "grayscale(100%)";
             
             const label = document.createElement('div');
             label.className = 'preview-card-label';
-            label.textContent = `Image Preview`;
+            
+            let layoutText = "Full Page";
+            if(f.imageLayout === '2x1') layoutText = "13x18 (2/pg)";
+            if(f.imageLayout === '1x1') layoutText = "20x25 (1/pg)";
+            if(f.imageLayout === '2x2') layoutText = "10x15 (4/pg)";
+
+            label.innerHTML = `<strong>${layoutText}</strong><br>${f.imageOrient.toUpperCase()} • ${f.imageFit !== false ? 'Fitted' : 'Full'}`;
+            label.style.fontSize = "0.75rem";
             
             imgWrapper.appendChild(img);
             imgWrapper.appendChild(label);

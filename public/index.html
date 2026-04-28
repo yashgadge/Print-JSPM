@@ -59,6 +59,12 @@
                 <h2>Print Options</h2>
             </div>
 
+            <div class="p-2">
+                <label for="file-upload" class="btn btn-secondary w-100 mb-2" style="border: 2px dashed var(--primary); background: #f0f4ff;">
+                    <span class="material-icons">add_circle</span> Add More Files
+                </label>
+            </div>
+
             <div id="file-list" class="file-list">
                 <!-- Dynamically populated files -->
             </div>
@@ -207,6 +213,32 @@
                         <button class="btn-icon plus-copy"><span class="material-icons">add</span></button>
                     </div>
                 </div>
+
+                <!-- Image Specific Options -->
+                <div class="image-options-box hidden" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border);">
+                    <div class="option-row">
+                        <label>Layout:</label>
+                        <select class="image-layout-select" style="padding: 5px; border-radius: 4px; border: 1px solid var(--border); background: white;">
+                            <option value="full">Full Page Photo</option>
+                            <option value="2x1">13 x 18 cm (2 per page)</option>
+                            <option value="1x1">20 x 25 cm (1 per page)</option>
+                            <option value="2x2">10 x 15 cm (4 per page)</option>
+                        </select>
+                    </div>
+                    <div class="option-row mt-1">
+                        <label>Orientation:</label>
+                        <div class="segmented-control image-orient-control" style="max-width: 200px;">
+                            <input type="radio" name="orient_{id}" id="port_{id}" value="portrait" checked>
+                            <label for="port_{id}" style="font-size: 0.8rem;">Portrait</label>
+                            <input type="radio" name="orient_{id}" id="land_{id}" value="landscape">
+                            <label for="land_{id}" style="font-size: 0.8rem;">Landscape</label>
+                        </div>
+                    </div>
+                    <div class="option-row mt-1" style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem;">
+                         <input type="checkbox" id="fit_{id}" class="image-fit-check" checked style="width:16px; height:16px;">
+                         <label for="fit_{id}" style="margin:0; cursor:pointer;">Fit picture to frame</label>
+                    </div>
+                </div>
             </div>
         </div>
     </template>
@@ -241,7 +273,7 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    <script type="module" src="js/app.js?v=11"></script>
+    <script type="module" src="js/app.js?v=14"></script>
 </body>
 
 </html>
