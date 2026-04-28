@@ -253,6 +253,9 @@ function renderFiles() {
                 f.imageFit = e.target.checked;
                 renderMainPDFPreview();
             };
+
+            // Update slots
+            updateSlotPicker(f.id, el);
         }
         
         el.querySelector('.file-preview-checkbox').addEventListener('change', () => {
@@ -263,6 +266,61 @@ function renderFiles() {
     });
     
     updatePrice();
+}
+
+function updateSlotPicker(fileId, el) {
+    const f = files.find(x => x.id === fileId);
+    const container = el.querySelector('.slot-picker-container');
+    const slotList = el.querySelector('.slot-list');
+    
+    const isMulti = ['2x1', '2x2', 'merge'].includes(f.imageLayout);
+    if (!isMulti) {
+        container.classList.add('hidden');
+        return;
+    }
+    
+    container.classList.remove('hidden');
+    slotList.innerHTML = '';
+    
+    const otherImages = files.filter(x => x.id !== fileId && (x.name.match(/\.(jpg|jpeg|png|webp)$/i) || (x.fileObj && x.fileObj.type && x.fileObj.type.startsWith('image/'))));
+    
+    if (otherImages.length === 0) {
+        slotList.innerHTML = '<span style="font-size:0.75rem; color:#999;">No other photos uploaded yet.</span>';
+        return;
+    }
+    
+    otherImages.forEach(other => {
+        const item = document.createElement('div');
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.gap = '8px';
+        item.style.fontSize = '0.85rem';
+        item.style.padding = '2px 0';
+        
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.style.width = '16px';
+        cb.style.height = '16px';
+        cb.checked = (f.combinedFiles || []).includes(other.id);
+        cb.onchange = (e) => {
+            if (!f.combinedFiles) f.combinedFiles = [];
+            if (e.target.checked) {
+                if (!f.combinedFiles.includes(other.id)) f.combinedFiles.push(other.id);
+            } else {
+                f.combinedFiles = f.combinedFiles.filter(id => id !== other.id);
+            }
+            renderMainPDFPreview();
+        };
+        
+        const lbl = document.createElement('label');
+        lbl.textContent = other.name;
+        lbl.style.cursor = 'pointer';
+        lbl.onclick = () => cb.click();
+        
+        item.appendChild(cb);
+        item.appendChild(lbl);
+        slotList.appendChild(item);
+    });
 }
 
 function updatePrice() {
@@ -575,7 +633,8 @@ async function verifyAndSaveJob(order_id, payment_id, signature) {
                 // Image specific
                 imageLayout: f.imageLayout || 'full',
                 imageOrient: f.imageOrient || 'portrait',
-                imageFit: f.imageFit !== false
+                imageFit: f.imageFit !== false,
+                combinedFiles: f.combinedFiles || []
             });
         }
         
@@ -713,8 +772,12 @@ window.renderMainPDFPreview = async function() {
             if(f.imageLayout === '2x1') layoutText = "13x18 (2/pg)";
             if(f.imageLayout === '1x1') layoutText = "20x25 (1/pg)";
             if(f.imageLayout === '2x2') layoutText = "10x15 (4/pg)";
+            if(f.imageLayout === 'merge') layoutText = "Merge Layout";
 
-            label.innerHTML = `<strong>${layoutText}</strong><br>${f.imageOrient.toUpperCase()} • ${f.imageFit !== false ? 'Fitted' : 'Full'}`;
+            const combinedCount = (f.combinedFiles || []).length;
+            const combinedText = combinedCount > 0 ? ` (+ ${combinedCount} others)` : '';
+
+            label.innerHTML = `<strong>${layoutText}${combinedText}</strong><br>${f.imageOrient.toUpperCase()} • ${f.imageFit !== false ? 'Fitted' : 'Full'}`;
             label.style.fontSize = "0.75rem";
             
             imgWrapper.appendChild(img);

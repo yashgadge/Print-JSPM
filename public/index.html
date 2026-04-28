@@ -239,6 +239,14 @@
                          <input type="checkbox" id="fit_{id}" class="image-fit-check" checked style="width:16px; height:16px;">
                          <label for="fit_{id}" style="margin:0; cursor:pointer;">Fit picture to frame</label>
                     </div>
+
+                    <!-- Slot Picker for Multi-photo layouts -->
+                    <div class="slot-picker-container hidden" style="margin-top: 10px; padding: 10px; background: #fff; border-radius: 6px; border: 1px solid var(--border);">
+                        <p style="font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; color: var(--primary);">Combine with other photos:</p>
+                        <div class="slot-list" style="display: flex; flex-direction: column; gap: 5px;">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -274,7 +282,7 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    <script type="module" src="js/app.js?v=15"></script>
+    <script type="module" src="js/app.js?v=16"></script>
 </body>
 
 </html>
