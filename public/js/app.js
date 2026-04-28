@@ -606,24 +606,49 @@ window.renderMainPDFPreview = async function() {
         if (!f || !f.fileObj) continue;
         
         const fileURL = URL.createObjectURL(f.fileObj);
+        
+        // Add File Header
+        const fileHeader = document.createElement('div');
+        fileHeader.innerHTML = `<h4 style="margin:0; font-size:1rem; color:var(--primary);"><span class="material-icons" style="font-size:1.2rem; vertical-align:middle; margin-right:5px;">description</span>${f.name}</h4>
+                                <div style="font-size:0.8rem; color:#666; margin-top:2px;">Type: ${f.type.toUpperCase()}</div>`;
+        fileHeader.style.marginTop = '1.5rem';
+        fileHeader.style.marginBottom = '1rem';
+        fileHeader.style.padding = '0.75rem';
+        fileHeader.style.background = '#fff';
+        fileHeader.style.border = '1px solid var(--border)';
+        fileHeader.style.borderRadius = 'var(--radius-md)';
+        fileHeader.style.boxShadow = 'var(--shadow-sm)';
+        fileHeader.style.width = '100%';
+        fileHeader.style.position = 'sticky';
+        fileHeader.style.top = '0';
+        fileHeader.style.zIndex = '10';
+        wrapperHTML.push(fileHeader);
+
+        if (f.fileObj.type.startsWith('image/')) {
+            const imgWrapper = document.createElement('div');
+            imgWrapper.className = 'preview-card';
+            imgWrapper.style.padding = '10px';
+            
+            const img = document.createElement('img');
+            img.src = fileURL;
+            img.style.maxWidth = '100%';
+            img.style.height = 'auto';
+            img.style.borderRadius = '4px';
+            img.style.boxShadow = "0px 2px 4px rgba(0,0,0,0.1)";
+            if (f.type === 'bw') img.style.filter = "grayscale(100%)";
+            
+            const label = document.createElement('div');
+            label.className = 'preview-card-label';
+            label.textContent = `Image Preview`;
+            
+            imgWrapper.appendChild(img);
+            imgWrapper.appendChild(label);
+            wrapperHTML.push(imgWrapper);
+            continue;
+        }
+
         try {
             const pdf = await pdfjsLib.getDocument(fileURL).promise;
-            
-            const fileHeader = document.createElement('div');
-            fileHeader.innerHTML = `<h4 style="margin:0; font-size:1rem; color:var(--primary);"><span class="material-icons" style="font-size:1.2rem; vertical-align:middle; margin-right:5px;">description</span>${f.name}</h4>
-                                    <div style="font-size:0.8rem; color:#666; margin-top:2px;">Type: ${f.type.toUpperCase()}</div>`;
-            fileHeader.style.marginTop = '1.5rem';
-            fileHeader.style.marginBottom = '1rem';
-            fileHeader.style.padding = '0.75rem';
-            fileHeader.style.background = '#fff';
-            fileHeader.style.border = '1px solid var(--border)';
-            fileHeader.style.borderRadius = 'var(--radius-md)';
-            fileHeader.style.boxShadow = 'var(--shadow-sm)';
-            fileHeader.style.width = '100%';
-            fileHeader.style.position = 'sticky';
-            fileHeader.style.top = '0';
-            fileHeader.style.zIndex = '10';
-            wrapperHTML.push(fileHeader);
             
             let pagesToRender = [];
             if (f.type === 'custom') {
