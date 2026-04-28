@@ -74,6 +74,66 @@ window.startNextJob = async function startNextJob() {
         // Mark as printing
         await updateDoc(doc(db, "jobs", nextJob.id), { status: "printing" });
         // The snapshot listener will handle UI updates
+        
+        // Auto-Print Preview Logic
+        let printWindow = window.open('', '_blank');
+        let html = `<html><head><title>Print Job ${nextJob.token}</title>
+        <style>
+            body { font-family: sans-serif; padding: 20px; }
+            .job-card { border: 2px dashed #000; padding: 20px; margin-bottom: 20px; }
+            img { max-width: 100%; max-height: 500px; display: block; margin-top: 10px; }
+            @media print {
+                .no-print { display: none; }
+                .page-break { page-break-after: always; }
+            }
+        </style></head><body>
+        <div class="no-print">
+            <h1>Job Token: ${nextJob.token}</h1>
+            <h2>Total: ${nextJob.totalPrice}</h2>
+            <hr>
+        </div>
+        `;
+        
+        nextJob.files.forEach(f => {
+            html += `<div class="job-card page-break">
+                <div class="no-print">
+                    <h2>File: ${f.name}</h2>
+                    <h3>Copies: ${f.copies} | Type: ${f.type.toUpperCase()}</h3>`;
+                
+            if (f.type === 'custom') {
+                html += `<p><strong>Color Pages:</strong> ${f.customColor || 'None'}</p>`;
+                html += `<p><strong>B/W Pages:</strong> ${f.customBw || 'None'}</p>`;
+            }
+            
+            if (f.imageLayout && f.imageLayout !== 'full') {
+                html += `<p><strong>Layout:</strong> ${f.imageLayout} (${f.imageOrient})</p>`;
+                if (f.combinedFiles && f.combinedFiles.length > 0) {
+                    html += `<p><strong>Contains ${f.combinedFiles.length} extra merged photos.</strong></p>`;
+                }
+            }
+            
+            html += `<p><a href="${f.url}" target="_blank">Click to Download Original File</a></p>
+                </div>`;
+            
+            // If it's an image, show a preview
+            if (f.name.match(/\.(jpg|jpeg|png|webp)$/i) || f.url.includes('alt=media')) {
+                 html += `<img src="${f.url}" style="${f.type === 'bw' ? 'filter: grayscale(100%);' : ''}">`;
+            } else {
+                 html += `<p class="no-print"><em>(PDF Document - Open Original File to Print)</em></p>`;
+            }
+            
+            html += `</div>`;
+        });
+        
+        html += `<script>
+            setTimeout(() => { 
+                window.print(); 
+            }, 1500);
+        </script></body></html>`;
+        
+        printWindow.document.write(html);
+        printWindow.document.close();
+        
     } catch(e) {
         console.error("Error updating job", e);
         alert("Failed to start job.");
@@ -120,12 +180,19 @@ onSnapshot(pq, (snapshot) => {
     }
 });
 
-// Listen to pending jobs
-const q = query(collection(db, "jobs"), where("status", "==", "pending"), orderBy("createdAt", "asc"));
+// Listen to pending jobs (Removed orderBy to fix missing Firestore composite index error)
+const q = query(collection(db, "jobs"), where("status", "==", "pending"));
 onSnapshot(q, (snapshot) => {
     currentJobs = [];
     snapshot.forEach((doc) => {
         currentJobs.push({ id: doc.id, ...doc.data() });
+    });
+    
+    // Sort locally by timestamp
+    currentJobs.sort((a, b) => {
+        const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
+        const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
+        return timeA - timeB;
     });
     
     if (currentJobs.length > 0) {
