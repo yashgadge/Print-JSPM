@@ -32,11 +32,8 @@
             <div class="grid-2-col mt-2">
                 <div class="card text-center border-primary">
                     <h4 class="text-muted">Now Printing</h4>
-                    <div class="amount-huge text-primary" id="current-job">A23</div>
-                    <div class="progress-bar mt-1">
-                        <div class="progress" style="width: 45%;"></div>
-                    </div>
-                    <p class="mt-1">Page 4 of 10</p>
+                    <div class="amount-huge text-primary" id="current-job">None</div>
+                    <p class="mt-1" id="current-job-meta" style="font-size: 0.8rem;">Waiting for job...</p>
                 </div>
                 
                 <div class="card text-center">
@@ -86,13 +83,13 @@
             </div>
 
             <div class="action-grid mt-2">
-                <button class="btn btn-success btn-massive" style="opacity: 0.8; cursor: default;">
-                    <span class="material-icons huge-icon">autorenew</span>
-                    <br>AUTO-PRINTING ACTIVE
+                <button class="btn btn-success btn-massive" onclick="startNextJob()" id="btn-start-job">
+                    <span class="material-icons huge-icon">play_arrow</span>
+                    <br>START NEXT JOB
                 </button>
-                <button class="btn btn-warning btn-massive" onclick="pausePrinter()">
-                    <span class="material-icons huge-icon">pause</span>
-                    <br>PAUSE
+                <button class="btn btn-primary btn-massive" onclick="completeCurrentJob()" id="btn-complete-job" disabled style="opacity: 0.5;">
+                    <span class="material-icons huge-icon">done_all</span>
+                    <br>MARK COMPLETE
                 </button>
             </div>
 

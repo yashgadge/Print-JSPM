@@ -762,6 +762,27 @@ async function verifyAndSaveJob(order_id, payment_id, signature) {
             document.getElementById('job-token').textContent = token;
             files = [];
             window.navigate('page-success');
+            
+            // Listen for realtime status updates for the user
+            const unsub = onSnapshot(doc(db, "jobs", data.jobId), (docSnap) => {
+                if (docSnap.exists()) {
+                    const status = docSnap.data().status;
+                    const statusEl = document.getElementById('user-job-status-text');
+                    if (statusEl) {
+                        if (status === 'pending') {
+                            statusEl.innerHTML = 'Status: <strong>Waiting in Queue...</strong>';
+                            statusEl.style.color = '#ff9800';
+                        } else if (status === 'printing') {
+                            statusEl.innerHTML = 'Status: <strong><span class="material-icons rotating" style="font-size:1rem;vertical-align:middle;">sync</span> Currently Printing!</strong>';
+                            statusEl.style.color = '#2196f3';
+                        } else if (status === 'completed') {
+                            statusEl.innerHTML = 'Status: <strong>✅ Printing Complete! Please collect.</strong>';
+                            statusEl.style.color = '#4caf50';
+                        }
+                    }
+                }
+            });
+            
         } else {
             throw new Error(data.error || "Verification failed");
         }

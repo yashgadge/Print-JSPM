@@ -70,21 +70,55 @@ window.startNextJob = async function startNextJob() {
 
     const nextJob = currentJobs[0];
     
-    // Update UI
-    document.getElementById('current-job').textContent = nextJob.token;
-    
     try {
         // Mark as printing
         await updateDoc(doc(db, "jobs", nextJob.id), { status: "printing" });
-        activeJobId = nextJob.id;
+        // The snapshot listener will handle UI updates
     } catch(e) {
         console.error("Error updating job", e);
+        alert("Failed to start job.");
     }
 }
 
-window.pausePrinter = function pausePrinter() {
-    alert("Printer command: PAUSE sent.");
+window.completeCurrentJob = async function completeCurrentJob() {
+    if (!activeJobId) return;
+    
+    try {
+        await updateDoc(doc(db, "jobs", activeJobId), { status: "completed" });
+        activeJobId = null;
+        // The snapshot listener will clear the Now Printing section
+    } catch(e) {
+        console.error("Error completing job", e);
+        alert("Failed to complete job.");
+    }
 }
+
+// Listen to printing jobs (Now Printing)
+const pq = query(collection(db, "jobs"), where("status", "==", "printing"));
+onSnapshot(pq, (snapshot) => {
+    if (!snapshot.empty) {
+        const printingJob = snapshot.docs[0];
+        activeJobId = printingJob.id;
+        const data = printingJob.data();
+        
+        document.getElementById('current-job').textContent = data.token;
+        document.getElementById('current-job-meta').textContent = `${data.files.length} Files • Printing...`;
+        
+        document.getElementById('btn-complete-job').disabled = false;
+        document.getElementById('btn-complete-job').style.opacity = '1';
+        document.getElementById('btn-start-job').disabled = true;
+        document.getElementById('btn-start-job').style.opacity = '0.5';
+    } else {
+        activeJobId = null;
+        document.getElementById('current-job').textContent = "None";
+        document.getElementById('current-job-meta').textContent = "Waiting for job...";
+        
+        document.getElementById('btn-complete-job').disabled = true;
+        document.getElementById('btn-complete-job').style.opacity = '0.5';
+        document.getElementById('btn-start-job').disabled = false;
+        document.getElementById('btn-start-job').style.opacity = '1';
+    }
+});
 
 // Listen to pending jobs
 const q = query(collection(db, "jobs"), where("status", "==", "pending"), orderBy("createdAt", "asc"));
