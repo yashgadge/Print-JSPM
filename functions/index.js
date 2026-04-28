@@ -68,13 +68,19 @@ exports.verifyPayment = onRequest({ cors: true, timeoutSeconds: 60, invoker: "pu
         // Payment verified! Now save to Firestore
         const db = admin.firestore();
         
-        // Strip out excessive data to minimize document size
+        // Strip out excessive data to minimize document size but keep layout metadata
         const safeFiles = jobData.files.map(f => ({
-            name: f.name.substring(0, 100), // Prevent extreme string lengths
+            name: String(f.name || "").substring(0, 100),
             url: f.url,
             type: f.type,
             copies: parseInt(f.copies) || 1,
-            pages: parseInt(f.pages) || 1
+            pages: parseInt(f.pages) || 1,
+            imageLayout: f.imageLayout || 'full',
+            imageOrient: f.imageOrient || 'portrait',
+            imageFit: f.imageFit !== false,
+            combinedFiles: Array.isArray(f.combinedFiles) ? f.combinedFiles.slice(0, 20) : [],
+            customColor: f.customColor || "",
+            customBw: f.customBw || ""
         }));
 
         const docRef = await db.collection("jobs").add({

@@ -99,7 +99,24 @@ onSnapshot(q, (snapshot) => {
         document.getElementById('next-job').textContent = nextJob.token;
         document.getElementById('next-job-meta').textContent = `${nextJob.files.length} Files • ${nextJob.totalPrice}`;
         
-        let filesHtml = nextJob.files.map(f => `<div><a href="${f.url}" target="_blank" class="text-primary">${f.name}</a></div>`).join('');
+        let filesHtml = nextJob.files.map(f => {
+            let details = `<span style="color:#666;">[${f.copies}x, ${f.type.toUpperCase()}</span>`;
+            if (f.type === 'custom') {
+                details += `, Color: ${f.customColor || 'None'}, B/W: ${f.customBw || 'None'}`;
+            }
+            if (f.imageLayout && f.imageLayout !== 'full') {
+                details += `<br> Layout: ${f.imageLayout}, ${f.imageOrient}`;
+                if (f.combinedFiles && f.combinedFiles.length > 0) {
+                    details += `<br> Merged with: ${f.combinedFiles.length} other(s)`;
+                }
+            }
+            details += `]</span>`;
+            
+            return `<div style="margin-bottom: 5px; border-bottom: 1px dotted #ccc; padding-bottom: 5px;">
+                <a href="${f.url}" target="_blank" class="text-primary" style="font-weight:bold;">${f.name}</a><br>
+                <div style="font-size: 0.75rem;">${details}</div>
+            </div>`;
+        }).join('');
         document.getElementById('next-job-files').innerHTML = filesHtml;
     } else {
         document.getElementById('next-job').textContent = "None";
