@@ -325,12 +325,23 @@ function updateSlotPicker(fileId, el) {
     container.classList.remove('hidden');
     slotList.innerHTML = '';
     
+    let maxCombine = 99;
+    if (f.imageLayout === '2x1') maxCombine = 1;
+    if (f.imageLayout === '2x2') maxCombine = 3;
+    
+    const currentCombinedCount = (f.combinedFiles || []).length;
+    const isAtLimit = currentCombinedCount >= maxCombine;
+    
     const otherImages = files.filter(x => x.id !== fileId && (x.name.match(/\.(jpg|jpeg|png|webp)$/i) || (x.fileObj && x.fileObj.type && x.fileObj.type.startsWith('image/'))));
     
     if (otherImages.length === 0) {
         slotList.innerHTML = '<span style="font-size:0.75rem; color:#999;">No other photos uploaded yet.</span>';
         return;
     }
+    
+    // Header text update
+    const limitText = maxCombine === 99 ? 'unlimited' : `up to ${maxCombine}`;
+    el.querySelector('.slot-picker-container p').textContent = `Combine with other photos (select ${limitText}):`;
     
     otherImages.forEach(other => {
         const item = document.createElement('div');
@@ -344,7 +355,14 @@ function updateSlotPicker(fileId, el) {
         cb.type = 'checkbox';
         cb.style.width = '16px';
         cb.style.height = '16px';
-        cb.checked = (f.combinedFiles || []).includes(other.id);
+        
+        const isChecked = (f.combinedFiles || []).includes(other.id);
+        cb.checked = isChecked;
+        
+        if (isAtLimit && !isChecked) {
+            cb.disabled = true;
+        }
+        
         cb.onchange = (e) => {
             if (!f.combinedFiles) f.combinedFiles = [];
             if (e.target.checked) {
@@ -353,12 +371,17 @@ function updateSlotPicker(fileId, el) {
                 f.combinedFiles = f.combinedFiles.filter(id => id !== other.id);
             }
             renderMainPDFPreview();
+            updateSlotPicker(fileId, el); // Refresh to update disabled states
         };
         
         const lbl = document.createElement('label');
         lbl.textContent = other.name;
-        lbl.style.cursor = 'pointer';
-        lbl.onclick = () => cb.click();
+        lbl.style.cursor = isAtLimit && !isChecked ? 'not-allowed' : 'pointer';
+        if (isAtLimit && !isChecked) lbl.style.color = '#aaa';
+        
+        lbl.onclick = () => {
+            if (!cb.disabled) cb.click();
+        };
         
         item.appendChild(cb);
         item.appendChild(lbl);
@@ -793,27 +816,30 @@ window.renderMainPDFPreview = async function() {
             page.style.background = 'white';
             page.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
             page.style.margin = '10px auto';
-            page.style.padding = '10px';
+            page.style.padding = '15px'; // A4 margins
             page.style.display = 'grid';
-            page.style.gap = '10px';
             page.style.width = '100%';
             page.style.maxWidth = '350px';
-            page.style.aspectRatio = f.imageOrient === 'landscape' ? '1.414/1' : '1/1.414'; // A4 aspect ratio
+            page.style.aspectRatio = f.imageOrient === 'landscape' ? '1.414/1' : '1/1.414'; // Exact A4 aspect ratio
             
             // Setup Grid
             if (f.imageLayout === '2x1') {
                 page.style.gridTemplateColumns = f.imageOrient === 'landscape' ? '1fr 1fr' : '1fr';
                 page.style.gridTemplateRows = f.imageOrient === 'landscape' ? '1fr' : '1fr 1fr';
+                page.style.gap = '15px';
             } else if (f.imageLayout === '2x2') {
                 page.style.gridTemplateColumns = '1fr 1fr';
                 page.style.gridTemplateRows = '1fr 1fr';
+                page.style.gap = '12px'; // Standard spacing for 4 photos on A4
             } else if (f.imageLayout === 'merge') {
                 const total = 1 + combinedFilesArr.length;
                 const cols = Math.ceil(Math.sqrt(total));
                 page.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+                page.style.gap = '10px';
             } else {
                 page.style.gridTemplateColumns = '1fr';
                 page.style.gridTemplateRows = '1fr';
+                page.style.gap = '0px';
             }
 
             const allFilesToRender = [f, ...combinedFilesArr];
