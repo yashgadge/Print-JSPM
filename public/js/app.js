@@ -158,7 +158,16 @@ function renderFiles() {
     
     container.innerHTML = '';
     
+    const combinedIds = new Set();
     files.forEach(f => {
+        if (f.combinedFiles && f.combinedFiles.length > 0) {
+            f.combinedFiles.forEach(id => combinedIds.add(id));
+        }
+    });
+    
+    files.forEach(f => {
+        if (combinedIds.has(f.id)) return; // Skip rendering if it's merged into another file
+        
         let html = template.replace(/{id}/g, f.id);
         const div = document.createElement('div');
         div.innerHTML = html;
@@ -776,28 +785,50 @@ window.renderMainPDFPreview = async function() {
             imgWrapper.className = 'preview-card';
             imgWrapper.style.padding = '10px';
             
-            const img = document.createElement('img');
-            img.src = fileURL;
-            img.style.maxWidth = '100%';
-            img.style.height = '150px'; // Fixed height for consistency in grid
-            img.style.borderRadius = '4px';
-            img.style.boxShadow = "0px 2px 4px rgba(0,0,0,0.1)";
+            // Get combined files
+            const combinedFilesArr = (f.combinedFiles || []).map(id => files.find(x => x.id === id)).filter(Boolean);
             
-            // Apply "Fit to Frame" logic
-            if (f.imageFit !== false) {
-                img.style.objectFit = 'cover'; // Cropped to fill
+            // Create Page Wrapper
+            const page = document.createElement('div');
+            page.style.background = 'white';
+            page.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+            page.style.margin = '10px auto';
+            page.style.padding = '10px';
+            page.style.display = 'grid';
+            page.style.gap = '10px';
+            page.style.width = '100%';
+            page.style.maxWidth = '350px';
+            page.style.aspectRatio = f.imageOrient === 'landscape' ? '1.414/1' : '1/1.414'; // A4 aspect ratio
+            
+            // Setup Grid
+            if (f.imageLayout === '2x1') {
+                page.style.gridTemplateColumns = f.imageOrient === 'landscape' ? '1fr 1fr' : '1fr';
+                page.style.gridTemplateRows = f.imageOrient === 'landscape' ? '1fr' : '1fr 1fr';
+            } else if (f.imageLayout === '2x2') {
+                page.style.gridTemplateColumns = '1fr 1fr';
+                page.style.gridTemplateRows = '1fr 1fr';
+            } else if (f.imageLayout === 'merge') {
+                const total = 1 + combinedFilesArr.length;
+                const cols = Math.ceil(Math.sqrt(total));
+                page.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
             } else {
-                img.style.objectFit = 'contain'; // Whole image visible
-                img.style.background = "#eee";
+                page.style.gridTemplateColumns = '1fr';
+                page.style.gridTemplateRows = '1fr';
             }
+
+            const allFilesToRender = [f, ...combinedFilesArr];
             
-            // Visual feedback for orientation
-            if (f.imageOrient === 'landscape') {
-                img.style.transform = "rotate(-5deg)"; // Subtle tilt to show it's landscape-intended
-                img.style.border = "3px solid var(--primary)";
-            }
-            
-            if (f.type === 'bw') img.style.filter = "grayscale(100%)";
+            allFilesToRender.forEach(fileObj => {
+                if (!fileObj.fileObj) return;
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(fileObj.fileObj);
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = f.imageFit !== false ? 'cover' : 'contain';
+                if (f.imageFit === false) img.style.background = "#eee";
+                if (f.type === 'bw') img.style.filter = 'grayscale(100%)';
+                page.appendChild(img);
+            });
             
             const label = document.createElement('div');
             label.className = 'preview-card-label';
@@ -808,13 +839,13 @@ window.renderMainPDFPreview = async function() {
             if(f.imageLayout === '2x2') layoutText = "10x15 (4/pg)";
             if(f.imageLayout === 'merge') layoutText = "Merge Layout";
 
-            const combinedCount = (f.combinedFiles || []).length;
+            const combinedCount = combinedFilesArr.length;
             const combinedText = combinedCount > 0 ? ` (+ ${combinedCount} others)` : '';
 
             label.innerHTML = `<strong>${layoutText}${combinedText}</strong><br>${f.imageOrient.toUpperCase()} • ${f.imageFit !== false ? 'Fitted' : 'Full'}`;
             label.style.fontSize = "0.75rem";
             
-            imgWrapper.appendChild(img);
+            imgWrapper.appendChild(page);
             imgWrapper.appendChild(label);
             wrapperHTML.push(imgWrapper);
             continue;
