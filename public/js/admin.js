@@ -1,5 +1,6 @@
-import { db } from "./firebase-config.js";
-import { collection, query, where, orderBy, onSnapshot, doc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { db, storage } from "./firebase-config.js";
+import { collection, query, where, orderBy, onSnapshot, doc, setDoc, updateDoc, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { ref, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
 // Navigation
 window.navigate = function navigate(pageId) {
@@ -274,3 +275,52 @@ onSnapshot(todayQuery, (snapshot) => {
         }
     }
 });
+// Delete all jobs and files
+window.deleteAllJobsAndFiles = async function() {
+    const confirmDelete = confirm("⚠️ DANGER: This will delete ALL jobs and ALL files from Firebase Storage. This action cannot be undone. Are you absolutely sure?");
+    if (!confirmDelete) return;
+
+    const nukeBtn = document.getElementById('btn-nuke-storage');
+    nukeBtn.innerHTML = '<span class="material-icons rotating">sync</span> DELETING...';
+    nukeBtn.disabled = true;
+
+    try {
+        const querySnapshot = await getDocs(collection(db, "jobs"));
+        let deleteCount = 0;
+
+        for (const docSnap of querySnapshot.docs) {
+            const job = docSnap.data();
+            
+            // Delete associated files from Storage
+            if (job.files && Array.isArray(job.files)) {
+                for (const f of job.files) {
+                    if (f.url) {
+                        try {
+                            const fileRef = ref(storage, f.url);
+                            await deleteObject(fileRef);
+                        } catch (err) {
+                            console.warn("Could not delete file from storage:", f.url, err);
+                        }
+                    }
+                }
+            }
+            
+            // Delete the document from Firestore
+            await deleteDoc(doc(db, "jobs", docSnap.id));
+            deleteCount++;
+        }
+
+        alert(`Successfully deleted ${deleteCount} jobs and their files from the server!`);
+    } catch (e) {
+        console.error("Error during nuke operation: ", e);
+        alert("An error occurred while deleting data.");
+    } finally {
+        nukeBtn.innerHTML = '<span class="material-icons">delete_forever</span> DELETE ALL FILES & JOBS (FREE UP STORAGE)';
+        nukeBtn.disabled = false;
+        
+        // Reset local variables if needed
+        activeJobId = null;
+        document.getElementById('current-job').textContent = "None";
+        document.getElementById('current-job-meta').textContent = "Waiting for job...";
+    }
+}
