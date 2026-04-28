@@ -20,6 +20,21 @@ document.getElementById('shop-toggle').addEventListener('change', async function
     }
 });
 
+// Update Pricing
+window.updatePricing = async function() {
+    const bw = parseFloat(document.getElementById('price-bw').value) || 2;
+    const color = parseFloat(document.getElementById('price-color').value) || 10;
+    
+    try {
+        await setDoc(doc(db, "config", "shop"), { 
+            prices: { bw: bw, color: color } 
+        }, { merge: true });
+    } catch (error) {
+        console.error("Error updating prices: ", error);
+        alert("Failed to update pricing.");
+    }
+}
+
 // Listen to own status to update UI based on DB
 onSnapshot(doc(db, "config", "shop"), (docSnap) => {
     if (docSnap.exists()) {
@@ -35,6 +50,12 @@ onSnapshot(doc(db, "config", "shop"), (docSnap) => {
             textEl.textContent = 'PAUSED - NO NEW JOBS';
             textEl.classList.add('text-danger');
             textEl.classList.remove('text-success');
+        }
+        
+        // Update Pricing Inputs
+        if (data.prices) {
+            document.getElementById('price-bw').value = data.prices.bw || 2;
+            document.getElementById('price-color').value = data.prices.color || 10;
         }
     }
 });
@@ -94,3 +115,44 @@ function showError() {
 function hideError() {
     document.getElementById('error-alert').classList.add('hidden');
 }
+
+// Cost Monitoring & Usage Tracking
+const startOfDay = new Date();
+startOfDay.setHours(0,0,0,0);
+
+const todayQuery = query(collection(db, "jobs"), where("createdAt", ">=", startOfDay));
+onSnapshot(todayQuery, (snapshot) => {
+    let jobCount = snapshot.docs.length;
+    let estimatedStorageMB = jobCount * 2.5; // Average 2.5MB per job
+    
+    const maxJobs = 200;
+    document.getElementById('daily-jobs-count').textContent = `${jobCount} / ${maxJobs}`;
+    document.getElementById('daily-storage-count').textContent = `${estimatedStorageMB.toFixed(1)} MB / 500 MB`;
+    
+    let usagePercent = (jobCount / maxJobs) * 100;
+    const progressEl = document.getElementById('usage-progress');
+    const statusEl = document.getElementById('usage-status');
+    
+    if (progressEl && statusEl) {
+        progressEl.style.width = `${usagePercent}%`;
+        
+        if (usagePercent >= 90) {
+            progressEl.style.background = '#dc3545'; // Danger
+            statusEl.style.background = '#dc3545';
+            statusEl.textContent = 'Critical Limit';
+            // Auto-disable shop if overloaded
+            if (document.getElementById('shop-toggle').checked) {
+                document.getElementById('shop-toggle').click();
+                alert("Shop automatically closed due to Free Tier limit approaching!");
+            }
+        } else if (usagePercent >= 75) {
+            progressEl.style.background = '#ffc107'; // Warning
+            statusEl.style.background = '#ffc107';
+            statusEl.textContent = 'High Usage Warning';
+        } else {
+            progressEl.style.background = '#28a745'; // Safe
+            statusEl.style.background = '#28a745';
+            statusEl.textContent = 'Safe Limit';
+        }
+    }
+});

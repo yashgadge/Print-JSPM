@@ -8,10 +8,21 @@
     ],
     "rewrites": [
       {
+        "source": "/api/createOrder",
+        "function": "createOrder"
+      },
+      {
+        "source": "/api/verifyPayment",
+        "function": "verifyPayment"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
     ]
+  },
+  "functions": {
+    "source": "functions"
   },
   "firestore": {
     "rules": "firestore.rules",

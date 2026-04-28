@@ -47,10 +47,48 @@
                 </div>
             </div>
 
+            <!-- Pricing Configuration -->
+            <div class="card mt-2 border-primary">
+                <div class="flex-between">
+                    <h4 class="text-muted"><span class="material-icons" style="font-size: 1rem; vertical-align: middle;">currency_rupee</span> Pricing Setup</h4>
+                </div>
+                <div class="grid-2-col mt-1">
+                    <div>
+                        <label style="font-size: 0.8rem; color: #666;">B/W Print (₹)</label>
+                        <input type="number" id="price-bw" class="input-large" value="2" min="1" onchange="updatePricing()">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.8rem; color: #666;">Color Print (₹)</label>
+                        <input type="number" id="price-color" class="input-large" value="10" min="1" onchange="updatePricing()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cost Monitoring Section -->
+            <div class="card mt-2 border-warning" id="cost-monitoring-card">
+                <div class="flex-between">
+                    <h4 class="text-muted"><span class="material-icons" style="font-size: 1rem; vertical-align: middle;">data_usage</span> Cloud Usage (Today)</h4>
+                    <span id="usage-status" class="status-badge" style="background: #28a745;">Safe</span>
+                </div>
+                <div class="grid-2-col mt-1">
+                    <div>
+                        <p style="font-size: 0.8rem; color: #666;">Jobs Processed</p>
+                        <h3 id="daily-jobs-count">0 / 200</h3>
+                    </div>
+                    <div>
+                        <p style="font-size: 0.8rem; color: #666;">Storage Uploaded</p>
+                        <h3 id="daily-storage-count">0 MB / 500 MB</h3>
+                    </div>
+                </div>
+                <div class="progress-bar mt-1" style="height: 4px;">
+                    <div id="usage-progress" class="progress" style="width: 0%; background: #28a745;"></div>
+                </div>
+            </div>
+
             <div class="action-grid mt-2">
-                <button class="btn btn-success btn-massive" onclick="startNextJob()">
-                    <span class="material-icons huge-icon">play_arrow</span>
-                    <br>START NEXT JOB
+                <button class="btn btn-success btn-massive" style="opacity: 0.8; cursor: default;">
+                    <span class="material-icons huge-icon">autorenew</span>
+                    <br>AUTO-PRINTING ACTIVE
                 </button>
                 <button class="btn btn-warning btn-massive" onclick="pausePrinter()">
                     <span class="material-icons huge-icon">pause</span>

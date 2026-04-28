@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
+
 <body>
     <div id="app">
         <!-- Header -->
@@ -21,11 +23,12 @@
             <div class="card">
                 <h2>Welcome!</h2>
                 <p>Print your documents easily.</p>
-                
+
                 <div class="action-group">
                     <h3>Option 1: Upload Files</h3>
                     <p class="subtitle">PDF, DOC, PPT, Images (Max 20MB)</p>
-                    <input type="file" id="file-upload" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png" class="hidden">
+                    <input type="file" id="file-upload" multiple
+                        accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png" class="hidden">
                     <label for="file-upload" class="btn btn-primary btn-large">
                         <span class="material-icons">upload_file</span> Choose Files
                     </label>
@@ -42,15 +45,20 @@
                     </button>
                 </div>
             </div>
+
+            <div style="text-align: center; margin-top: 2rem; padding: 1rem; opacity: 0.5;">
+                <a href="/admin.html" style="color: inherit; text-decoration: none; font-size: 0.8rem;">Admin Login</a>
+            </div>
         </section>
 
         <!-- PAGE 2: File Preview & Options -->
         <section id="page-preview" class="page">
             <div class="header-with-back">
-                <button class="btn-icon" onclick="navigate('page-home')"><span class="material-icons">arrow_back</span></button>
+                <button class="btn-icon" onclick="navigate('page-home')"><span
+                        class="material-icons">arrow_back</span></button>
                 <h2>Print Options</h2>
             </div>
-            
+
             <div id="file-list" class="file-list">
                 <!-- Dynamically populated files -->
             </div>
@@ -58,6 +66,9 @@
             <div class="bottom-bar">
                 <div class="price-summary">Total: <span id="total-price">₹0</span></div>
                 <button class="btn btn-primary btn-large w-100" onclick="navigate('page-payment')">Proceed to Pay</button>
+                <button class="btn btn-secondary w-100 mt-1" onclick="bypassPayment()" style="font-size: 0.8rem;">
+                    <span class="material-icons">developer_mode</span> Skip Payment (Test Success Flow)
+                </button>
             </div>
         </section>
 
@@ -65,20 +76,42 @@
         <div id="modal-custom-pages" class="modal">
             <div class="modal-content card">
                 <h3>Custom Pages for <span id="custom-file-name">Document</span></h3>
-                
+
                 <div class="form-group">
                     <label>Color Pages (e.g., 1, 3-5)</label>
                     <input type="text" id="custom-color-pages" placeholder="Leave empty if none" class="input-large">
                 </div>
-                
+
                 <div class="form-group">
                     <label>B/W Pages (e.g., 2, 6-10)</label>
                     <input type="text" id="custom-bw-pages" placeholder="Leave empty if none" class="input-large">
                 </div>
 
-                <div class="modal-actions">
+                <div id="custom-pages-error" class="text-danger mt-1 hidden"
+                    style="font-size: 0.9rem; font-weight: bold;"></div>
+
+                <div class="custom-summary mt-2" style="background: var(--bg); padding: 1rem; border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span>Selected Pages:</span> <strong id="custom-selected-pages">None</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span>Total Valid Pages:</span> <strong id="custom-total-valid">0</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span>Color: <strong id="custom-color-count">0</strong></span>
+                        <span>B/W: <strong id="custom-bw-count">0</strong></span>
+                    </div>
+                    <div
+                        style="display: flex; justify-content: space-between; border-top: 1px solid #ccc; padding-top: 0.5rem; margin-top: 0.5rem;">
+                        <span>Estimated Cost:</span> <strong id="custom-estimated-cost" class="text-primary">₹0</strong>
+                    </div>
+                </div>
+
+                <!-- Inline preview removed -->
+
+                <div class="modal-actions mt-2">
                     <button class="btn btn-secondary" onclick="closeCustomPagesModal()">Cancel</button>
-                    <button class="btn btn-primary" onclick="saveCustomPages()">Save</button>
+                    <button id="btn-save-custom" class="btn btn-primary" onclick="saveCustomPages()">Save</button>
                 </div>
             </div>
         </div>
@@ -86,19 +119,30 @@
         <!-- PAGE 4: Payment Page -->
         <section id="page-payment" class="page">
             <div class="header-with-back">
-                <button class="btn-icon" onclick="navigate('page-preview')"><span class="material-icons">arrow_back</span></button>
+                <button id="btn-back-payment" class="btn-icon" onclick="navigate('page-preview')"><span
+                        class="material-icons">arrow_back</span></button>
                 <h2>Payment</h2>
             </div>
             <div class="card text-center">
+                <h3>Job Summary</h3>
+                <div id="job-summary-container" class="mt-1 mb-2"
+                    style="text-align: left; background: var(--bg); padding: 1rem; border-radius: 8px; font-size: 0.9rem;">
+                    <!-- Populated dynamically -->
+                </div>
+
                 <h3>Amount to Pay</h3>
                 <div class="amount-huge" id="payment-amount">₹0</div>
                 <p>Please pay to confirm your print job.</p>
-                <div class="qr-placeholder">
-                    <span class="material-icons qr-icon">qr_code_scanner</span>
-                    <p>Scan to Pay</p>
+                <div id="razorpay-container" class="mt-2 mb-2">
+                    <button id="btn-pay-razorpay" class="btn btn-primary btn-large w-100" onclick="triggerRazorpay()">
+                        <span class="material-icons">payment</span> Pay with Razorpay
+                    </button>
+                    <button id="btn-dev-bypass" class="btn btn-secondary w-100 mt-1" onclick="bypassPayment()" style="font-size: 0.8rem;">
+                        <span class="material-icons">developer_mode</span> Developer Bypass
+                    </button>
                 </div>
-                <button class="btn btn-success btn-large w-100 mt-2" onclick="processPayment()">
-                    <span class="material-icons">check_circle</span> I have paid
+                <button id="btn-confirm-payment" class="btn btn-success w-100 mt-2 hidden" onclick="processPayment()">
+                    <span class="material-icons">check_circle</span> Processing...
                 </button>
             </div>
         </section>
@@ -109,7 +153,7 @@
                 <span class="material-icons success-icon">task_alt</span>
                 <h2>Payment Successful!</h2>
                 <p>Your print job is in the queue.</p>
-                
+
                 <div class="token-box">
                     <div class="token-label">YOUR TOKEN</div>
                     <div class="token-value" id="job-token">A23</div>
@@ -130,6 +174,8 @@
     <template id="file-item-template">
         <div class="file-item card">
             <div class="file-header">
+                <input type="checkbox" class="file-preview-checkbox" data-id="{id}" title="Show in preview panel"
+                    style="width: 20px; height: 20px; cursor: pointer;">
                 <span class="material-icons file-icon">description</span>
                 <div class="file-info">
                     <div class="file-name">filename.pdf</div>
@@ -137,22 +183,22 @@
                 </div>
                 <button class="btn-icon text-danger delete-file"><span class="material-icons">delete</span></button>
             </div>
-            
+
             <div class="print-options">
                 <div class="option-row">
                     <label>Print Type:</label>
                     <div class="segmented-control print-type-control">
                         <input type="radio" name="type_{id}" id="bw_{id}" value="bw" checked>
                         <label for="bw_{id}">B/W</label>
-                        
+
                         <input type="radio" name="type_{id}" id="color_{id}" value="color">
                         <label for="color_{id}">Color</label>
-                        
+
                         <input type="radio" name="type_{id}" id="custom_{id}" value="custom">
                         <label for="custom_{id}">Custom</label>
                     </div>
                 </div>
-                
+
                 <div class="option-row">
                     <label>Copies:</label>
                     <div class="number-input">
@@ -165,6 +211,37 @@
         </div>
     </template>
 
-    <script type="module" src="js/app.js"></script>
+    <!-- Side Expandable Preview Panel -->
+    <div id="preview-side-panel">
+        <button class="toggle-preview-btn" onclick="togglePreviewPanel()">
+            <span class="material-icons">arrow_back_ios</span>
+        </button>
+
+        <div class="preview-panel-header">
+            <h3>Document Preview</h3>
+        </div>
+
+        <div class="preview-summary-top">
+            <span id="side-selected-pages">Selected: None</span>
+            <span id="side-total-pages">Total: 0 pages</span>
+        </div>
+
+        <div class="preview-panel-body" id="custom-pdf-preview">
+            <div style="text-align: center; color: #888; margin-top: 2rem; padding: 0 1rem;">
+                <span class="material-icons"
+                    style="font-size: 3rem; color: #ccc; margin-bottom: 1rem;">plagiarism</span><br>
+                <strong>No Preview Active</strong><br><br>
+                Check the small square checkboxes next to your uploaded files to see their live preview here.
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script type="module" src="js/app.js?v=9"></script>
 </body>
+
 </html>

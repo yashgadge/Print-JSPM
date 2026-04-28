@@ -1,0 +1,17 @@
+# Firebase
+.firebase/
+.firebaserc
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Node
+node_modules/
+npm-debug.log
+
+# Agent
+agent/
+
+# OS
+.DS_Store
+Thumbs.db
