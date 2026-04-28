@@ -160,7 +160,8 @@ function renderFiles() {
     
     const combinedIds = new Set();
     files.forEach(f => {
-        if (f.combinedFiles && f.combinedFiles.length > 0) {
+        const isMulti = ['2x1', '2x2', 'merge'].includes(f.imageLayout);
+        if (isMulti && f.combinedFiles && f.combinedFiles.length > 0) {
             f.combinedFiles.forEach(id => combinedIds.add(id));
         }
     });
@@ -366,10 +367,17 @@ function updateSlotPicker(fileId, el) {
         
         cb.onchange = (e) => {
             if (!f.combinedFiles) f.combinedFiles = [];
+            
+            // Find the physical DOM element for the other file to hide/show it instantly
+            const otherCheckbox = document.querySelector(`.file-preview-checkbox[data-id="${other.id}"]`);
+            const otherFileItem = otherCheckbox ? otherCheckbox.closest('.file-item') : null;
+            
             if (e.target.checked) {
                 if (!f.combinedFiles.includes(other.id)) f.combinedFiles.push(other.id);
+                if (otherFileItem) otherFileItem.style.display = 'none';
             } else {
                 f.combinedFiles = f.combinedFiles.filter(id => id !== other.id);
+                if (otherFileItem) otherFileItem.style.display = '';
             }
             renderMainPDFPreview();
             updateSlotPicker(fileId, el); // Refresh to update disabled states
