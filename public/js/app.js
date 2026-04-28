@@ -384,9 +384,31 @@ function updateSlotPicker(fileId, el) {
         };
         
         const lbl = document.createElement('label');
-        lbl.textContent = other.name;
+        lbl.style.display = 'flex';
+        lbl.style.alignItems = 'center';
+        lbl.style.gap = '8px';
         lbl.style.cursor = isAtLimit && !isChecked ? 'not-allowed' : 'pointer';
         if (isAtLimit && !isChecked) lbl.style.color = '#aaa';
+        
+        if (other.fileObj) {
+            const imgThumb = document.createElement('img');
+            imgThumb.src = URL.createObjectURL(other.fileObj);
+            imgThumb.style.width = '32px';
+            imgThumb.style.height = '32px';
+            imgThumb.style.objectFit = 'cover';
+            imgThumb.style.borderRadius = '4px';
+            imgThumb.style.border = '1px solid #ccc';
+            lbl.appendChild(imgThumb);
+        }
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = other.name;
+        nameSpan.style.whiteSpace = 'nowrap';
+        nameSpan.style.overflow = 'hidden';
+        nameSpan.style.textOverflow = 'ellipsis';
+        nameSpan.style.maxWidth = '160px'; // Prevent long names from breaking layout
+        
+        lbl.appendChild(nameSpan);
         
         lbl.onclick = () => {
             if (!cb.disabled) cb.click();
