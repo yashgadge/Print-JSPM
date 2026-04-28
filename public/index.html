@@ -228,6 +228,14 @@
                             <option value="2x2">10 x 15 cm (4 per page)</option>
                         </select>
                     </div>
+
+                    <!-- Slot Picker for Multi-photo layouts -->
+                    <div class="slot-picker-container hidden" style="margin-top: 5px; margin-bottom: 10px; padding: 10px; background: #fff; border-radius: 6px; border: 1px solid var(--border);">
+                        <p style="font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; color: var(--primary);">Combine with other photos:</p>
+                        <div class="slot-list" style="display: flex; flex-direction: column; gap: 5px;">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
                     <div class="option-row mt-1">
                         <label>Orientation:</label>
                         <div class="segmented-control image-orient-control" style="max-width: 200px;">
@@ -240,14 +248,6 @@
                     <div class="option-row mt-1" style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem;">
                          <input type="checkbox" id="fit_{id}" class="image-fit-check" checked style="width:16px; height:16px;">
                          <label for="fit_{id}" style="margin:0; cursor:pointer;">Fit picture to frame</label>
-                    </div>
-
-                    <!-- Slot Picker for Multi-photo layouts -->
-                    <div class="slot-picker-container hidden" style="margin-top: 10px; padding: 10px; background: #fff; border-radius: 6px; border: 1px solid var(--border);">
-                        <p style="font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; color: var(--primary);">Combine with other photos:</p>
-                        <div class="slot-list" style="display: flex; flex-direction: column; gap: 5px;">
-                            <!-- Populated via JS -->
-                        </div>
                     </div>
                 </div>
             </div>
@@ -284,7 +284,7 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    <script type="module" src="js/app.js?v=19"></script>
+    <script type="module" src="js/app.js?v=20"></script>
 </body>
 
 </html>
