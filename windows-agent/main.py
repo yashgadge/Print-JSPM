@@ -5,8 +5,13 @@ import time
 import hashlib
 import requests
 import subprocess
+import boto3
+from botocore.config import Config
 from pathlib import Path
 from typing import Dict, Any, Optional
+from dotenv import load_dotenv
+
+load_dotenv()
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -21,6 +26,16 @@ class XeroxPrintAgent:
     def __init__(self, api_url: str, shop_id: str):
         self.api_url = api_url
         self.shop_id = shop_id
+        self.bucket = os.getenv("R2_BUCKET_NAME", "xerox-temp-storage")
+        
+        # Configure Boto3 for Cloudflare R2
+        self.s3_client = boto3.client(
+            's3',
+            endpoint_url=os.getenv('R2_ENDPOINT'),
+            aws_access_key_id=os.getenv('R2_ACCESS_KEY_ID'),
+            aws_secret_access_key=os.getenv('R2_SECRET_ACCESS_KEY'),
+            config=Config(signature_version='s3v4')
+        )
         
     def get_file_hash(self, filepath: Path) -> str:
         """Compute SHA256 hash of a file for integrity checking"""
@@ -45,52 +60,59 @@ class XeroxPrintAgent:
                 
         # 2. Download Authorization (Strict)
         if not local_path.exists():
-            download_url = self._get_download_url(job_id)
-            if not download_url:
+            authorized = self._authorize_download(job_id)
+            if not authorized:
                 print(f"[ERROR] Failed to authorize download for job {job_id}")
                 return False
                 
             # 3. File Download System & Locking
-            success = self._download_file(download_url, local_path)
+            success = self._download_file(file_id, local_path)
             if not success:
                 return False
                 
             # 4. File Integrity Check
             if self.get_file_hash(local_path) != file_id:
                 print(f"[CORRUPT] Downloaded file hash mismatch. Deleting...")
-                local_path.unlink()
+                local_path.unlink(missing_ok=True)
                 return False
+                
+            # Auto Cleanup Cloud Storage
+            self._delete_cloud_file(file_id)
                 
         # 5. Print Engine
         return self._print_file(local_path, job_data)
 
-    def _get_download_url(self, job_id: str) -> Optional[str]:
-        """Request Worker to atomically lock job and return presigned URL"""
+    def _authorize_download(self, job_id: str) -> bool:
+        """Request Worker to atomically lock job"""
         try:
-            res = requests.post(f"{self.api_url}/get-download-url", json={
+            res = requests.post(f"{self.api_url}/start-download", json={
                 "job_id": job_id,
                 "shop_id": self.shop_id
             })
             if res.status_code == 200:
-                return res.json().get('download_url')
-            return None
+                return True
+            return False
         except Exception as e:
             print(f"[API ERROR] {e}")
-            return None
+            return False
 
-    def _download_file(self, url: str, target_path: Path) -> bool:
-        """Download file ONLY once to target path"""
+    def _download_file(self, file_id: str, target_path: Path) -> bool:
+        """Download file directly from R2 ONLY once to target path"""
         try:
-            print(f"[DOWNLOAD] Starting download to {target_path}")
-            res = requests.get(url, stream=True)
-            res.raise_for_status()
-            with open(target_path, 'wb') as f:
-                for chunk in res.iter_content(chunk_size=8192):
-                    f.write(chunk)
+            print(f"[DOWNLOAD] Fetching {file_id}.pdf from R2...")
+            self.s3_client.download_file(self.bucket, f"{file_id}.pdf", str(target_path))
             return True
         except Exception as e:
             print(f"[DOWNLOAD ERROR] {e}")
             return False
+            
+    def _delete_cloud_file(self, file_id: str):
+        """Auto cleanup R2 storage immediately after success"""
+        try:
+            self.s3_client.delete_object(Bucket=self.bucket, Key=f"{file_id}.pdf")
+            print(f"[CLEANUP] Deleted {file_id}.pdf from R2")
+        except Exception as e:
+            print(f"[CLEANUP ERROR] {e}")
 
     def _print_file(self, filepath: Path, job_data: Dict[str, Any]) -> bool:
         """Physical Print Engine via SumatraPDF with Color/BW routing"""

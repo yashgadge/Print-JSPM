@@ -1,76 +1,38 @@
-import { AwsClient } from 'aws4fetch';
-
-// This is a robust AWS Signature V4 client for fetching presigned URLs from R2
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Setup AWS Client for R2 Presigned URLs
-    const r2 = new AwsClient({
-      accessKeyId: env.R2_ACCESS_KEY_ID,
-      secretAccessKey: env.R2_SECRET_ACCESS_KEY,
-      service: 's3',
-      region: 'auto',
-    });
+    // 1. UPLOAD FILE DIRECTLY VIA BINDING (No API Keys)
+    // POST /upload?file_id=123
+    if (request.method === 'POST' && url.pathname === '/upload') {
+      const file_id = url.searchParams.get('file_id');
+      if (!file_id) return new Response('Missing file_id', { status: 400 });
 
-    const bucketUrl = `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/xerox-temp-storage`;
-
-    // 1. CREATE UPLOAD URL
-    if (request.method === 'POST' && url.pathname === '/create-upload-url') {
-      const { file_id } = await request.json();
-
-      if (!file_id) {
-        return new Response('Missing file_id', { status: 400 });
+      // Deduplication check
+      const existing = await env.TEMP_STORAGE.head(`${file_id}.pdf`);
+      if (existing) {
+        return new Response(JSON.stringify({ duplicate: true }), { status: 200 });
       }
 
-      // Check if file already exists in R2 (Deduplication)
-      const headReq = await r2.fetch(`${bucketUrl}/${file_id}.pdf`, { method: 'HEAD' });
-      if (headReq.status === 200) {
-        return new Response(JSON.stringify({ duplicate: true, message: "File already uploaded" }), {
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-
-      // Generate Presigned PUT URL
-      const putUrl = new URL(`${bucketUrl}/${file_id}.pdf`);
-      putUrl.searchParams.set('X-Amz-Expires', '3600'); // 1 hour expiration
-      
-      const presignedReq = await r2.sign(new Request(putUrl, { method: 'PUT' }), {
-        aws: { signQuery: true },
+      // Stream directly to R2 bucket binding
+      await env.TEMP_STORAGE.put(`${file_id}.pdf`, request.body, {
+        httpMetadata: { contentType: request.headers.get('content-type') || 'application/pdf' }
       });
 
-      return new Response(JSON.stringify({ upload_url: presignedReq.url }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return new Response(JSON.stringify({ success: true, file_id }), { status: 200 });
     }
 
-    // 2. GET DOWNLOAD URL (Authorized download)
-    if (request.method === 'POST' && url.pathname === '/get-download-url') {
+    // 2. DOWNLOAD AUTHORIZATION (Locking)
+    if (request.method === 'POST' && url.pathname === '/start-download') {
       const { job_id, shop_id } = await request.json();
-
-      // Here you would validate with Firebase/Firestore
-      // If validation fails or status != 'assigned', return 403.
-      // E.g., await validateJobWithFirebase(job_id, shop_id);
-
-      // Transition state: assigned -> downloading (Atomic update in Firestore)
-      // await updateJobStatus(job_id, "downloading");
-
-      // Generate Presigned GET URL
-      // The file_id should be fetched from the database based on the job_id
-      const file_id = "test-file-id"; // Mock
       
-      const getUrl = new URL(`${bucketUrl}/${file_id}.pdf`);
-      getUrl.searchParams.set('X-Amz-Expires', '900'); // 15 mins expiration
+      // Here you would do the atomic update in Firebase.
+      // E.g., await updateFirebaseStatus(job_id, shop_id);
       
-      const presignedReq = await r2.sign(new Request(getUrl, { method: 'GET' }), {
-        aws: { signQuery: true },
-      });
-
-      return new Response(JSON.stringify({ download_url: presignedReq.url }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      // Since the Local Agent has the R2 API keys, we just tell it it's safe to download.
+      return new Response(JSON.stringify({ success: true, status: "downloading" }), { status: 200 });
     }
 
     return new Response('Not Found', { status: 404 });
-  },
+  }
 };
