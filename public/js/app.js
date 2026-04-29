@@ -718,8 +718,8 @@ async function verifyAndSaveJob(order_id, payment_id, signature) {
         for (let f of files) {
             if (f.fileObj) {
                 try {
-                    // Get Presigned Upload URL
-                    const urlRes = await fetch('/api/createUploadUrl', {
+                    // Get Presigned Upload URL from Cloudflare Worker
+                    const urlRes = await fetch('https://xerox-api.yashgadge14.workers.dev/create-upload-url', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ file_id: f.file_id })

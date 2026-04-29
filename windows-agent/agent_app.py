@@ -60,7 +60,7 @@ class AgentController:
     def __init__(self):
         self.app = QApplication(sys.argv)
         self.gui = XeroxPrintAgentGUI()
-        self.agent = XeroxPrintAgent(api_url="https://xerox-api.your-worker.workers.dev", shop_id="shop_1")
+        self.agent = XeroxPrintAgent(api_url="https://xerox-api.yashgadge14.workers.dev", shop_id="shop_1")
         
         self.gui.btn_start.clicked.connect(self.start_queue)
         self.gui.btn_pause.clicked.connect(self.pause_queue)

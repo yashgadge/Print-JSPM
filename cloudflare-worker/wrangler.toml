@@ -2,11 +2,10 @@ name = "xerox-api"
 main = "src/index.js"
 compatibility_date = "2024-04-20"
 
-# R2 Bucket Binding
 [[r2_buckets]]
-binding = "TEMP_STORAGE"
+binding = "R2_BUCKET"
 bucket_name = "xerox-temp-storage"
 
-# You will need to add your Firestore API URL and secrets
 [vars]
 R2_ACCOUNT_ID = "3e82a26522406a8e13b931ee38fe3405"
+R2_BUCKET_NAME = "xerox-temp-storage"

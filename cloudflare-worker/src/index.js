@@ -1,36 +1,75 @@
+import { AwsClient } from 'aws4fetch';
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const method = request.method;
 
-    // 1. UPLOAD FILE DIRECTLY VIA BINDING (No API Keys)
-    // POST /upload?file_id=123
-    if (request.method === 'POST' && url.pathname === '/upload') {
-      const file_id = url.searchParams.get('file_id');
+    // Initialize AWS Client for Presigning
+    // NOTE: These MUST be set as secrets using `wrangler secret put`
+    const s3 = new AwsClient({
+      accessKeyId: env.R2_ACCESS_KEY_ID,
+      secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+      service: 's3',
+      region: 'auto',
+    });
+
+    const bucketUrl = `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${env.R2_BUCKET_NAME}`;
+
+    // 1. POST /create-upload-url
+    if (method === 'POST' && url.pathname === '/create-upload-url') {
+      const { file_id } = await request.json();
       if (!file_id) return new Response('Missing file_id', { status: 400 });
 
-      // Deduplication check
-      const existing = await env.TEMP_STORAGE.head(`${file_id}.pdf`);
-      if (existing) {
-        return new Response(JSON.stringify({ duplicate: true }), { status: 200 });
+      // Check if file exists using R2 Binding
+      const exists = await env.R2_BUCKET.head(`${file_id}.pdf`);
+      if (exists) {
+        return new Response(JSON.stringify({ duplicate: true }), { 
+          status: 200, 
+          headers: { 'Content-Type': 'application/json' } 
+        });
       }
 
-      // Stream directly to R2 bucket binding
-      await env.TEMP_STORAGE.put(`${file_id}.pdf`, request.body, {
-        httpMetadata: { contentType: request.headers.get('content-type') || 'application/pdf' }
+      // Generate Presigned PUT URL
+      const putUrl = new URL(`${bucketUrl}/${file_id}.pdf`);
+      putUrl.searchParams.set('X-Amz-Expires', '3600');
+      const presigned = await s3.sign(new Request(putUrl, { method: 'PUT' }), {
+        aws: { signQuery: true },
       });
 
-      return new Response(JSON.stringify({ success: true, file_id }), { status: 200 });
+      return new Response(JSON.stringify({ upload_url: presigned.url }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
-    // 2. DOWNLOAD AUTHORIZATION (Locking)
-    if (request.method === 'POST' && url.pathname === '/start-download') {
-      const { job_id, shop_id } = await request.json();
+    // 2. POST /get-download-url
+    if (method === 'POST' && url.pathname === '/get-download-url') {
+      const { job_id, shop_id, file_id } = await request.json();
       
-      // Here you would do the atomic update in Firebase.
-      // E.g., await updateFirebaseStatus(job_id, shop_id);
+      // Validation Logic (Mocked - replace with actual Firebase/Logic check)
+      // status should be 'assigned'
       
-      // Since the Local Agent has the R2 API keys, we just tell it it's safe to download.
-      return new Response(JSON.stringify({ success: true, status: "downloading" }), { status: 200 });
+      // Generate Presigned GET URL
+      const getUrl = new URL(`${bucketUrl}/${file_id}.pdf`);
+      getUrl.searchParams.set('X-Amz-Expires', '900'); // 15 mins
+      const presigned = await s3.sign(new Request(getUrl, { method: 'GET' }), {
+        aws: { signQuery: true },
+      });
+
+      return new Response(JSON.stringify({ download_url: presigned.url }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 3. POST /delete-file
+    if (method === 'POST' && url.pathname === '/delete-file') {
+      const { file_id } = await request.json();
+      if (!file_id) return new Response('Missing file_id', { status: 400 });
+
+      await env.R2_BUCKET.delete(`${file_id}.pdf`);
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     return new Response('Not Found', { status: 404 });
