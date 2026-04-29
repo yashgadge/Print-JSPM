@@ -118,8 +118,12 @@ async function handleNewFiles(newFiles) {
                 }
             }
             
+            // 1. FILE IDENTIFICATION (MANDATORY) - Compute SHA256 Hash
+            const file_id = await getFileHash(f);
+
             files.push({
                 id: 'file_' + Date.now() + Math.random().toString(36).substr(2, 9),
+                file_id: file_id, // Store the computed hash
                 name: f.name,
                 fileObj: f,
                 type: 'bw', // default bw
@@ -149,6 +153,14 @@ async function handleNewFiles(newFiles) {
         alert("Error processing files: " + err.message);
         console.error(err);
     }
+}
+
+// SHA256 Hashing Function
+async function getFileHash(file) {
+    const buffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 // Render Files
@@ -701,25 +713,44 @@ async function verifyAndSaveJob(order_id, payment_id, signature) {
         const token = "A" + Math.floor(Math.random() * 90 + 10);
         const jobId = "job_" + Date.now();
         
-        // 1. Upload files first
+        // 1. Upload files directly to Cloudflare R2 using Presigned URLs
         let fileRecords = [];
         for (let f of files) {
-            let publicUrl = "";
             if (f.fileObj) {
-                const filePath = `jobs/${jobId}/${f.name}`;
-                const storageRef = ref(storage, filePath);
-                
                 try {
-                    await uploadBytes(storageRef, f.fileObj);
-                    publicUrl = await getDownloadURL(storageRef);
+                    // Get Presigned Upload URL
+                    const urlRes = await fetch('/api/createUploadUrl', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ file_id: f.file_id })
+                    });
+                    const urlData = await urlRes.json();
+                    
+                    if (urlData.error) throw new Error(urlData.error);
+                    
+                    // If not a duplicate, upload the file directly to R2
+                    if (!urlData.duplicate) {
+                        const uploadRes = await fetch(urlData.upload_url, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': f.fileObj.type },
+                            body: f.fileObj
+                        });
+                        
+                        if (!uploadRes.ok) {
+                            throw new Error(`Cloudflare R2 Upload Failed: ${uploadRes.statusText}`);
+                        }
+                    } else {
+                        console.log(`[Deduplication] File ${f.file_id} already exists in R2. Skipping upload.`);
+                    }
                 } catch (error) {
                     throw new Error(`Failed to upload ${f.name}: ${error.message}`);
                 }
             }
             
             fileRecords.push({
+                file_id: f.file_id, // Important for new architecture
                 name: f.name,
-                url: publicUrl,
+                url: "", // Removed Firebase URL
                 type: f.type,
                 copies: f.copies,
                 pages: f.pages,
